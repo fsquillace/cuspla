@@ -1,0 +1,7 @@
+.cproject
+.project
+Makefile
+makefile
+test_cuspla
+*.o
+*.so

@@ -23,6 +23,8 @@ EXAMPLE OF USING
 ----------------
 For matrix-matrix multiplication::
 ---------------------------------
+#include <cuspla.h>
+
 cusp::array2d<cusp::double, cusp::device_memory, cusp::column_major> A, B, C;
 // Filling matrices A and B;
 // ....

@@ -1,5 +1,5 @@
 /*
- * test_cula.cu
+ * test_cuspla.cu
  *
  *  Created on: Nov 16, 2011
  *      Author: Squillace Filippo
@@ -7,10 +7,10 @@
 
 //#define CUSP_USE_TEXTURE_MEMORY
 
-#include <iostream>
+
+// CUSP includes
 #include <cusp/csr_matrix.h>
 #include <cusp/io/matrix_market.h>
-#include <string.h>
 #include <cusp/print.h>
 #include <cusp/multiply.h>
 #include <cusp/transpose.h>
@@ -18,17 +18,22 @@
 #include <cusp/array2d.h>
 #include <cusp/detail/random.h>
 
-#include <sstream>
 
-#include <cuspla/cuspla.h>
+#include <cuspla.cu>
 
 
+// common
 #include <cppunit/ui/text/TestRunner.h>
 #include <cppunit/TestFixture.h>
 #include <cppunit/TestCaller.h>
 #include <cppunit/TestSuite.h>
 #include <cppunit/extensions/HelperMacros.h>
 #include <cppunit/extensions/TestFactoryRegistry.h>
+
+#include <string.h>
+#include <iostream>
+#include <stdio.h>
+#include <sstream>
 
 void checkStatus(culaStatus status)
 {
@@ -51,9 +56,9 @@ void checkStatus(culaStatus status)
 
 
 
-class CulaTestCase : public CppUnit::TestFixture {
+class CusplaTestCase : public CppUnit::TestFixture {
 
-    CPPUNIT_TEST_SUITE (CulaTestCase);
+    CPPUNIT_TEST_SUITE (CusplaTestCase);
 
     CPPUNIT_TEST (test_host_GEMM);
     CPPUNIT_TEST (test_host_transpose_GEMM);
@@ -151,7 +156,7 @@ public:
               HostMatrix_array2d C;
               HostMatrix_array2d C2;
 
-              cula::gemm(host_mat_not_squared[i], host_mat_not_squared[j], C,\
+              cuspla::gemm(host_mat_not_squared[i], host_mat_not_squared[j], C,\
             		  ValueType(1),ValueType(0),false,false);
               cusp::multiply(host_mat_not_squared[i], host_mat_not_squared[j], C2);
 
@@ -173,7 +178,7 @@ public:
               HostMatrix_array2d C;
               HostMatrix_array2d C2, mat_OP1_trans, mat_OP2_trans;
 
-              cula::gemm(host_mat_not_squared[i], host_mat_not_squared[j], C,\
+              cuspla::gemm(host_mat_not_squared[i], host_mat_not_squared[j], C,\
             		  ValueType(1),ValueType(0),true, true);
 
               cusp::transpose(host_mat_not_squared[i], mat_OP1_trans);
@@ -198,7 +203,7 @@ public:
               DeviceMatrix_array2d C;
               HostMatrix_array2d C2, C_host;
 
-              cula::gemm(dev_mat_not_squared[i], dev_mat_not_squared[j], C,\
+              cuspla::gemm(dev_mat_not_squared[i], dev_mat_not_squared[j], C,\
             		  ValueType(1),ValueType(0),false,false);
               C_host = HostMatrix_array2d(C);
 
@@ -222,7 +227,7 @@ public:
               DeviceMatrix_array2d C;
               HostMatrix_array2d C2, mat_OP1_trans, mat_OP2_trans, C_host;
 
-              cula::gemm(dev_mat_not_squared[i], dev_mat_not_squared[j], C,\
+              cuspla::gemm(dev_mat_not_squared[i], dev_mat_not_squared[j], C,\
             		  ValueType(1),ValueType(0),true, true);
               C_host = HostMatrix_array2d(C);
 
@@ -247,7 +252,7 @@ public:
           HostVector_array1d C(N);
           HostVector_array1d C2(N);
 
-          cula::gemv(host_mat_not_squared[i], vec_OP2, C,false);
+          cuspla::gemv(host_mat_not_squared[i], vec_OP2, C,false);
 
           cusp::multiply(host_mat_not_squared[i], vec_OP2, C2);
 
@@ -266,7 +271,7 @@ public:
           HostVector_array1d C2(M);
           HostMatrix_array2d mat_OP1_trans;
 
-          cula::gemv(host_mat_not_squared[i], vec_OP2, C,true);
+          cuspla::gemv(host_mat_not_squared[i], vec_OP2, C,true);
 
           cusp::transpose(host_mat_not_squared[i], mat_OP1_trans);
           cusp::multiply(mat_OP1_trans, vec_OP2, C2);
@@ -286,7 +291,7 @@ public:
           DeviceVector_array1d C(N);
           HostVector_array1d C2(N), vec_OP2_host, C_host;
 
-          cula::gemv(dev_mat_not_squared[i], vec_OP2, C,false);
+          cuspla::gemv(dev_mat_not_squared[i], vec_OP2, C,false);
 
           vec_OP2_host = HostVector_array1d(vec_OP2);
           cusp::multiply(host_mat_not_squared[i], vec_OP2_host, C2);
@@ -309,7 +314,7 @@ public:
           DeviceVector_array1d C(M);
           HostVector_array1d C2(M), vec_OP2_host, C_host;
 
-          cula::gemv(dev_mat_not_squared[i], vec_OP2, C,true);
+          cuspla::gemv(dev_mat_not_squared[i], vec_OP2, C,true);
 
           vec_OP2_host = HostVector_array1d(vec_OP2);
           HostMatrix_array2d mat_OP1_trans;
@@ -325,41 +330,6 @@ public:
   }
 
 
-  struct in_diagonal : public thrust::unary_function<int,bool>
-  {
-      int N, M;
-
-      __host__ __device__
-      in_diagonal(int _N, int _M) : N(_N), M(_M) {}
-
-      __host__ __device__
-      bool operator()(int i)
-      {
-          if (i %(N+1) ==0)
-              return true;
-          else
-              return false;
-      }
-  };
-
-
-  template <typename ValueType>
-  struct assigns : public thrust::unary_function<ValueType,ValueType>
-  {
-      ValueType cons;
-
-      __host__ __device__
-      assigns(ValueType _const) : cons(_const) {}
-
-      __host__ __device__
-      ValueType operator()(ValueType e)
-      {
-          return cons;
-      }
-  };
-
-
-
   void test_host_GEQRF()
   {
 
@@ -373,7 +343,7 @@ public:
           HostMatrix_array2d A(n,m), mat_OP1_copy;
 
           cusp::copy(host_mat_not_squared[i], mat_OP1_copy);
-          cula::geqrf(mat_OP1_copy, Q, R, true);
+          cuspla::geqrf(mat_OP1_copy, Q, R, true);
 
           //Checks orthogonality of Q
           HostMatrix_array2d Qt(n,n), I(n,n), Ip(n,n);
@@ -384,8 +354,8 @@ public:
           thrust::transform_if(Ip.values.begin(), Ip.values.end(), \
               stencil, \
               Ip.values.begin(), \
-              assigns<ValueType>(ValueType(1)), \
-              in_diagonal(n,n));
+              cuspla::assigns<ValueType>(ValueType(1)), \
+              cuspla::in_diagonal(n,n));
           ValueType errRel = nrmVector("host_GEQRF orthogonality "+path_not_squared[i], I.values, Ip.values);
           CPPUNIT_ASSERT( errRel < 1.0e-5 );
 
@@ -409,7 +379,7 @@ public:
           DeviceMatrix_array2d R(n, m);
 
 
-          cula::geqrf(dev_mat_not_squared[i], Q, R, true);
+          cuspla::geqrf(dev_mat_not_squared[i], Q, R, true);
 
           //Checks orthogonality of Q
           HostMatrix_array2d I(n,n), Ip(n,n);
@@ -422,8 +392,8 @@ public:
           thrust::transform_if(Ip.values.begin(), Ip.values.end(), \
               stencil, \
               Ip.values.begin(), \
-              assigns<ValueType>(ValueType(1)), \
-              in_diagonal(n,n));
+              cuspla::assigns<ValueType>(ValueType(1)), \
+              cuspla::in_diagonal(n,n));
           ValueType errRel = nrmVector("device_GEQRF orthogonality "+path_not_squared[i], I.values, Ip.values);
           CPPUNIT_ASSERT( errRel < 1.0e-5 );
 
@@ -454,11 +424,11 @@ public:
           HostVector_array1d y1, eigvec(m);
 
           cusp::copy(host_mat_def_pos[i], mat_OP1_copy);
-          cula::geev(mat_OP1_copy, eigvals, eigvects);
+          cuspla::geev(mat_OP1_copy, eigvals, eigvects);
 
           for(size_t j=0; j<eigvals.size(); j++){
               thrust::copy(eigvects.values.begin()+ j*m, eigvects.values.begin()+ (j+1)*m,eigvec.begin());
-              cula::gemv(host_mat_def_pos[i], eigvec, y1, false);
+              cuspla::gemv(host_mat_def_pos[i], eigvec, y1, false);
               cusp::blas::scal(eigvec, (ValueType)eigvals[j]);
 
               std::stringstream j_str, eigval_str;
@@ -485,11 +455,11 @@ public:
           HostVector_array1d y1, eigvec(m);
 
           cusp::copy(dev_mat_def_pos[i], mat_OP1_copy);
-          cula::geev(mat_OP1_copy, eigvals, eigvects);
+          cuspla::geev(mat_OP1_copy, eigvals, eigvects);
 
           for(size_t j=0; j<eigvals.size(); j++){
               thrust::copy(eigvects.values.begin()+ j*m, eigvects.values.begin()+ (j+1)*m,eigvec.begin());
-              cula::gemv(host_mat_def_pos[i], eigvec, y1, false);
+              cuspla::gemv(host_mat_def_pos[i], eigvec, y1, false);
               cusp::blas::scal(eigvec, (ValueType)eigvals[j]);
 
               std::stringstream j_str, eigval_str;
@@ -506,7 +476,6 @@ public:
 
 
 
-  // TODO move cula wrap to another project and commit in a new repo in github
 template <typename Array1d>
 ValueType nrmVector(std::string title, Array1d& A, Array1d& A2){
       ValueType nrmA = cusp::blas::nrm2(A);
@@ -547,7 +516,7 @@ ValueType nrmVector(std::string title, Array1d& A, Array1d& A2){
 
 
 
-CPPUNIT_TEST_SUITE_REGISTRATION( CulaTestCase );
+CPPUNIT_TEST_SUITE_REGISTRATION( CusplaTestCase );
 
 int main(int argc, char** argv)
 {

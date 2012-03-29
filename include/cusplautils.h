@@ -6,7 +6,9 @@
  */
 
 
+#include <thrust/functional.h>
 
+namespace cuspla{
 
 struct in_diagonal : public thrust::unary_function<int,bool>
 {
@@ -24,6 +26,23 @@ struct in_diagonal : public thrust::unary_function<int,bool>
             return false;
     }
 };
+
+
+template <typename ValueType>
+struct mul_const : public thrust::unary_function<ValueType,ValueType>
+{
+	ValueType alpha;
+
+	mul_const(ValueType _alpha)
+		: alpha(_alpha) {}
+
+	__host__ __device__
+		void operator()(ValueType & x)
+		{
+			x = alpha * x;
+		}
+};
+
 
 template <typename ValueType>
 struct plus_const : public thrust::unary_function<ValueType,ValueType>
@@ -58,6 +77,10 @@ struct assigns : public thrust::unary_function<ValueType,ValueType>
 template <typename ValueType>
 struct copy : public thrust::unary_function<ValueType,ValueType>
 {
+
+    __host__ __device__
+    copy() {}
+
     __host__ __device__
     ValueType operator()(ValueType e)
     {
@@ -86,3 +109,4 @@ struct in_upper_triang : public thrust::unary_function<int,bool>
 };
 
 
+}

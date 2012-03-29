@@ -1,18 +1,25 @@
 #pragma once
 
+// CULA includes
 #include <culapack.h>
 #include <culapackdevice.h>
 #include <cula.h>
 #include <culablas.h>
 #include <culablasdevice.h>
+#include <culastatus.h>
 
-#include <cusp/print.h>
 
+#include <cusp/memory.h>
+#include <cusp/array2d.h>
+
+
+// THRUST includes
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/transform.h>
 
 
-#include "utils.h"
+#include "cusplautils.h"
+
 
 namespace cuspla{
 
@@ -93,7 +100,7 @@ culaStatus geev(Array2d& H, Array1d& eigvals, Array2d& eigvects, double, cusp::d
 }
 
 
-// Entry point
+// ------------------   Entry point ---------------------
 template <typename Array2d, typename Array1d>
 culaStatus geev(Array2d& H, Array1d& eigvals, Array2d& eigvects){
 
@@ -198,7 +205,8 @@ culaStatus gemm(Array2d& A, Array2d& B, Array2d& C, char tA, char tB, ValueType 
 // --------- Entry point -----------------------
 // The upper triangular matrix R will be in H matrix
 template <typename Array2d, typename ValueType>
-culaStatus gemm(Array2d& A, Array2d& B, Array2d& C, ValueType alpha=ValueType(1), ValueType beta = ValueType(0),  bool transA=false, bool transB=false){
+culaStatus gemm(Array2d& A, Array2d& B, Array2d& C, ValueType alpha=ValueType(1),\
+		ValueType beta = ValueType(0),  bool transA=false, bool transB=false){
     /*
      * C = alpha*OP(A)*OP(B) + beta*C
      *
@@ -207,7 +215,8 @@ culaStatus gemm(Array2d& A, Array2d& B, Array2d& C, ValueType alpha=ValueType(1)
      *   beta = 0.0
      *   transA = transB = false
      *
-     * Note: C must be different from both A and B matrix because storing the result in C will change either matrix A and B going
+     * Note: C must be different from both A and B matrix because storing
+     *  the result in C will change either matrix A or B going
      *  to change the correct result.
      */
 
@@ -336,8 +345,7 @@ culaStatus gemv(Array2d& A, Array1d& x, Array1d& y, char tA,\
 
 
 
-// Entry point
-// The upper triangular matrix R will be in H matrix
+// ---------------------- Entry point --------------------------
 template <typename Array2d, typename Array1d>
 culaStatus gemv(Array2d& A, Array1d& x, Array1d& y, bool transA=false){
     /*
@@ -376,15 +384,16 @@ void house_holder(const ValueType tau, const Array1d& v, Array2d& H){
     Array2d tmp(N, 1);
     tmp.values = v;
 //    thrust::copy(v.begin(), v.end(), tmp.values.begin());
-    gemm(tmp, tmp, H, -tau, false, true);
+
+    gemm(tmp, tmp, H, -tau, ValueType2(0), false, true);
 
     // Adds 1 of each element of the diagonal
     thrust::counting_iterator<int> stencil (0);
     thrust::transform_if(H.values.begin(), H.values.end(), \
             stencil, \
             H.values.begin(), \
-            plus_const<ValueType2>(ValueType2(1)), \
-            in_diagonal(N,N));
+            cuspla::plus_const<ValueType2>(ValueType2(1)), \
+            cuspla::in_diagonal(N,N));
 
 }
 
@@ -425,7 +434,7 @@ culaStatus geqrf(Array2d& A, Array1d& tau, double, cusp::device_memory, cusp::co
 
 
 
-// Entry point
+// ------------------ Entry point ----------------
 // The upper triangular matrix R will be in H matrix
 template <typename Array2d>
 culaStatus geqrf(Array2d& A, Array2d& Q, Array2d& R, bool get_R=true){
@@ -456,8 +465,8 @@ culaStatus geqrf(Array2d& A, Array2d& Q, Array2d& R, bool get_R=true){
     thrust::transform_if(Q.values.begin(), Q.values.end(), \
         stencil, \
         Q.values.begin(), \
-        assigns<ValueType>(ValueType(1)), \
-        in_diagonal(N,N));
+        cuspla::assigns<ValueType>(ValueType(1)), \
+        cuspla::in_diagonal(N,N));
 
 
 	// Computes Q = Q*H(k)
@@ -479,9 +488,6 @@ culaStatus geqrf(Array2d& A, Array2d& Q, Array2d& R, bool get_R=true){
 	}
 
 
-
-
-
     if(get_R){
         //computes R is the upper triangular of A
         R.resize(N,M);
@@ -490,8 +496,8 @@ culaStatus geqrf(Array2d& A, Array2d& Q, Array2d& R, bool get_R=true){
         thrust::transform_if(A.values.begin(), A.values.end(), \
             thrust::counting_iterator<int>(0), \
             R.values.begin(), \
-            copy<ValueType>(), \
-            in_upper_triang(N,M));
+            cuspla::copy<ValueType>(), \
+            cuspla::in_upper_triang(N,M));
 
     }
 
@@ -503,3 +509,4 @@ culaStatus geqrf(Array2d& A, Array2d& Q, Array2d& R, bool get_R=true){
 
 
 } // end cula namespace
+
