@@ -489,6 +489,7 @@ public:
           ValueType errRel = nrmVector("host_GETRI "+path_def_pos[i], A_inv.values, host_mat_def_pos[i].values);
           CPPUNIT_ASSERT( errRel < 1.0e-4 );
 
+
       }
   }
 
@@ -504,6 +505,7 @@ public:
 
     	  HostMatrix_array2d A_inv_host;
     	  cusp::copy(A_inv, A_inv_host);
+
           ValueType errRel = nrmVector("device_GETRI "+path_def_pos[i], A_inv_host.values, host_mat_def_pos[i].values);
           CPPUNIT_ASSERT( errRel < 1.0e-4 );
 
