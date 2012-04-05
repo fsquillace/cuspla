@@ -11,6 +11,7 @@
 
 #include <cusp/memory.h>
 #include <cusp/array2d.h>
+#include <cusp/array1d.h>
 
 
 // THRUST includes
@@ -506,6 +507,71 @@ culaStatus geqrf(Array2d& A, Array2d& Q, Array2d& R, bool get_R=true){
 }
 
 
+
+// *****************  Inverse of a Matrix *****************************
+
+
+
+template <typename Array2d>
+culaStatus getri(Array2d& A, float, cusp::host_memory, cusp::column_major){
+	cusp::array1d<culaInt, cusp::host_memory> ipiv(A.num_rows);
+
+	culaSgetrf(A.num_rows, A.num_cols,\
+			thrust::raw_pointer_cast(A.values.data()),\
+			A.num_rows, thrust::raw_pointer_cast(ipiv.data()));
+
+	return culaSgetri(A.num_rows,\
+			thrust::raw_pointer_cast(A.values.data()),\
+			A.num_rows, thrust::raw_pointer_cast(ipiv.data()));
+}
+
+template <typename Array2d>
+culaStatus getri(Array2d& A, double, cusp::host_memory, cusp::column_major){
+	cusp::array1d<culaInt, cusp::host_memory> ipiv(A.num_rows);
+
+	culaDgetrf(A.num_rows, A.num_cols,\
+			thrust::raw_pointer_cast(A.values.data()),\
+			A.num_rows, thrust::raw_pointer_cast(ipiv.data()));
+
+	return culaDgetri(A.num_rows,\
+			thrust::raw_pointer_cast(A.values.data()),\
+			A.num_rows, thrust::raw_pointer_cast(ipiv.data()));
+}
+
+template <typename Array2d>
+culaStatus getri(Array2d& A, float, cusp::device_memory, cusp::column_major){
+	cusp::array1d<culaInt, cusp::device_memory> ipiv(A.num_rows);
+
+	culaDeviceSgetrf(A.num_rows, A.num_cols,\
+			thrust::raw_pointer_cast(A.values.data()),\
+			A.num_rows, thrust::raw_pointer_cast(ipiv.data()));
+
+	return culaDeviceSgetri(A.num_rows,\
+			thrust::raw_pointer_cast(A.values.data()),\
+			A.num_rows, thrust::raw_pointer_cast(ipiv.data()));
+}
+
+template <typename Array2d>
+culaStatus getri(Array2d& A, double, cusp::device_memory, cusp::column_major){
+	cusp::array1d<culaInt, cusp::device_memory> ipiv(A.num_rows);
+
+	culaDeviceDgetrf(A.num_rows, A.num_cols,\
+			thrust::raw_pointer_cast(A.values.data()),\
+			A.num_rows, thrust::raw_pointer_cast(ipiv.data()));
+
+	return culaDeviceDgetri(A.num_rows,\
+			thrust::raw_pointer_cast(A.values.data()),\
+			A.num_rows, thrust::raw_pointer_cast(ipiv.data()));
+}
+
+
+
+// ------------------ Entry point ----------------
+template <typename Array2d>
+culaStatus getri(Array2d& A){
+	assert(A.num_rows == A.num_cols);
+	return getri(A, typename Array2d::value_type(), typename Array2d::memory_space(), typename Array2d::orientation());
+}
 
 
 } // end cula namespace

@@ -19,6 +19,9 @@ template <typename Array2d>
 culaStatus geqrf(Array2d& A, Array2d& Q, Array2d& R, bool get_R=true);
 
 
+template <typename Array2d>
+culaStatus getri(Array2d& A);
+
 }
 
 

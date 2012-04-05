@@ -12,7 +12,7 @@ INCL = -I $(CUSP_PATH)
 INCL += -I $(CULA_PATH)/include
 INCL += -I ../include
 
-CFLAGS_COMMON = -O2 -arch=sm_11 -Xcompiler -fmessage-length=0
+CFLAGS_COMMON = -O2 -arch=sm_11 -Xcompiler -fmessage-length=0 --compiler-bindir ~/pkg/dwnld/gcc44/pkg/usr/bin
 CFLAGS = 
 
 SYMS = -DVERBOSE #-DVVERBOSE
