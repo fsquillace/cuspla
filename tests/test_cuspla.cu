@@ -76,6 +76,9 @@ class CusplaTestCase : public CppUnit::TestFixture {
     CPPUNIT_TEST(test_host_GEEV);
     CPPUNIT_TEST(test_device_GEEV);
 
+    CPPUNIT_TEST(test_host_GETRI);
+    CPPUNIT_TEST(test_device_GETRI);
+
     CPPUNIT_TEST_SUITE_END ();
 
     typedef int    IndexType;
@@ -474,6 +477,40 @@ public:
   }
 
 
+  void test_host_GETRI()
+  {
+
+      for(size_t i=0; i<path_def_pos.size(); i++){
+    	  HostMatrix_array2d A_inv;
+    	  cusp::copy(host_mat_def_pos[i], A_inv);
+    	  cuspla::getri(A_inv);
+    	  cuspla::getri(A_inv);
+
+          ValueType errRel = nrmVector("host_GETRIEV "+path_def_pos[i], A_inv.values, host_mat_def_pos[i].values);
+          CPPUNIT_ASSERT( errRel < 1.0e-2 );
+
+      }
+  }
+
+
+  void test_device_GETRI()
+  {
+
+      for(size_t i=0; i<path_def_pos.size(); i++){
+    	  DeviceMatrix_array2d A_inv;
+    	  cusp::copy(dev_mat_def_pos[i], A_inv);
+    	  cuspla::getri(A_inv);
+    	  cuspla::getri(A_inv);
+
+    	  HostMatrix_array2d A_inv_host;
+    	  cusp::copy(A_inv, A_inv_host);
+          ValueType errRel = nrmVector("host_GETRIEV "+path_def_pos[i], A_inv_host.values, host_mat_def_pos[i].values);
+          CPPUNIT_ASSERT( errRel < 1.0e-2 );
+
+      }
+  }
+
+
 
 
 template <typename Array1d>
@@ -507,6 +544,8 @@ ValueType nrmVector(std::string title, Array1d& A, Array1d& A2){
 
       return errRel;
 }
+
+
 
 
 
